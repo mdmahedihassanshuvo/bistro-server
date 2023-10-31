@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 7000;
-require('dotenv').config()
+require("dotenv").config();
 
 // middle wares.............................
 app.use(express.json());
@@ -11,8 +11,7 @@ app.use(cors());
 // CRUD Operation...........................
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri =
-  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xwgviar.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xwgviar.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -30,16 +29,43 @@ async function run() {
 
     const menuCollection = client.db("bistro").collection("menu");
     const reviewCollection = client.db("bistro").collection("reviews");
+    const userCollection = client.db("bistro").collection("users");
 
-    app.get("/menu", async(req, res) =>{
-        const result = await menuCollection.find().toArray();
-        res.send(result);
-    })
+    app.get("/menu", async (req, res) => {
+      const result = await menuCollection.find().toArray();
+      res.send(result);
+    });
 
-    app.get("/review", async(req, res) =>{
-        const result = await reviewCollection.find().toArray();
-        res.send(result);
-    })
+    app.get("/review", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/user", async (req, res) => {
+      const user = req.body;
+      const query = { email: user?.email };
+      const axistUser = await userCollection.findOne(query);
+      if (axistUser) {
+        return { message: "user all ready exist" };
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.get("/user", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/user/admin/:email", async (req, res) => {
+      const email = req.params.email;
+
+      const query = { email: email };
+
+      const user = await userCollection.findOne(query);
+      const result = { admin: user?.roll === "admin" };
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
