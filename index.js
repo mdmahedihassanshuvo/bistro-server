@@ -30,6 +30,7 @@ async function run() {
     const menuCollection = client.db("bistro").collection("menu");
     const reviewCollection = client.db("bistro").collection("reviews");
     const userCollection = client.db("bistro").collection("users");
+    const cartCollection = client.db("bistro").collection("cartItem");
 
     app.get("/menu", async (req, res) => {
       const result = await menuCollection.find().toArray();
@@ -66,6 +67,21 @@ async function run() {
       const result = { admin: user?.roll === "admin" };
       res.send(result);
     });
+
+    // CRUD OPERATION...........................
+
+    app.post("/cart", async(req, res) =>{
+      const cartItem = req.body;
+      const result = await cartCollection.insertOne(cartItem);
+      res.send(result);
+    })
+
+    app.get("/cart/:email", async(req, res) => {
+      const email = req.params.email;
+      const query = {userEmail : email};
+      const result = await cartCollection.find(query).toArray();
+      res.send(result)
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
