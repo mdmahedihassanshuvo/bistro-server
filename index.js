@@ -10,7 +10,7 @@ app.use(cors());
 
 // CRUD Operation...........................
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xwgviar.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -70,18 +70,30 @@ async function run() {
 
     // CRUD OPERATION...........................
 
-    app.post("/cart", async(req, res) =>{
+    app.post("/cart", async (req, res) => {
       const cartItem = req.body;
       const result = await cartCollection.insertOne(cartItem);
       res.send(result);
-    })
+    });
 
-    app.get("/cart/:email", async(req, res) => {
+    app.get("/cart", async (req, res) => {
+      const result = await cartCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/cart/:email", async (req, res) => {
       const email = req.params.email;
-      const query = {userEmail : email};
+      const query = { userEmail: email };
       const result = await cartCollection.find(query).toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
+
+    app.delete('/cart/:id', async (req, res) => {
+      const cartItemId = req.params.id;
+      // console.log(typeof(cartItemId));
+      const result = await cartCollection.deleteOne({ id: cartItemId}); // Use 'new ObjectId()'
+      res.send(result);
+  })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
