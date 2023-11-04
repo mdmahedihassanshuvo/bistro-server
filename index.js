@@ -32,6 +32,7 @@ async function run() {
     const reviewCollection = client.db("bistro").collection("reviews");
     const userCollection = client.db("bistro").collection("users");
     const cartCollection = client.db("bistro").collection("cartItem");
+    const bookingCollection = client.db("bistro").collection("bookings");
 
     app.post("/menu", async (req, res) => {
       const item = req.body;
@@ -142,6 +143,44 @@ async function run() {
       const cartItemId = req.params.id;
       // console.log(typeof(cartItemId));
       const result = await cartCollection.deleteOne({ id: cartItemId }); // Use 'new ObjectId()'
+      res.send(result);
+    });
+
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    app.get("/booking", async (req, res) => {
+      const result = await bookingCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/booking/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { user: email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.patch("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const booking = req.body;
+      const updateBooking = {
+        $set: {
+          activity: booking.activity,
+        },
+      };
+      const result = await bookingCollection.updateOne(filter, updateBooking);
+      res.send(result);
+    });
+
+    app.delete("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
 
