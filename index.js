@@ -26,6 +26,7 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+    // CRUD OPERATION...........................
 
     const menuCollection = client.db("bistro").collection("menu");
     const reviewCollection = client.db("bistro").collection("reviews");
@@ -99,7 +100,25 @@ async function run() {
       res.send(result);
     });
 
-    // CRUD OPERATION...........................
+    app.patch("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const user = req.body;
+      const updateUser = {
+        $set: {
+          roll: user.roll,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateUser);
+      res.send(result);
+    });
+
+    app.delete("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(filter);
+      res.send(result);
+    });
 
     app.post("/cart", async (req, res) => {
       const cartItem = req.body;
