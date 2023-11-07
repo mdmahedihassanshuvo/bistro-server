@@ -1,12 +1,34 @@
 const express = require("express");
 const app = express();
-const cors = require("cors");
-const port = process.env.PORT || 7000;
+var jwt = require("jsonwebtoken");
 require("dotenv").config();
+const cors = require("cors");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const port = process.env.PORT || 7000;
 
 // middle wares.............................
 app.use(express.json());
 app.use(cors());
+
+// const verifyJwt = (req, res, next) => {
+//   const authorization = req.headers.authorization;
+//   if (!authorization) {
+//     return res
+//       .status(401)
+//       .send({ error: true, message: "Unauthorized access" });
+//   }
+
+//   const token = authorization.split(" ")[1];
+//   jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+//     if (err) {
+//       return res
+//         .status(403)
+//         .send({ error: true, message: "Unauthorized access" });
+//     }
+//     req.decoded = decoded;
+//     next();
+//   });
+// };
 
 // CRUD Operation...........................
 
@@ -33,6 +55,16 @@ async function run() {
     const userCollection = client.db("bistro").collection("users");
     const cartCollection = client.db("bistro").collection("cartItem");
     const bookingCollection = client.db("bistro").collection("bookings");
+    const paymentCollection = client.db("bistro").collection("payments");
+
+    // app.post("/jwt", (req, res) => {
+    //   const user = req.body;
+    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+    //     expiresIn: "1h",
+    //   });
+    //   const result = { token };
+    //   res.send(result);
+    // });
 
     app.post("/menu", async (req, res) => {
       const item = req.body;
@@ -142,8 +174,25 @@ async function run() {
     app.delete("/cart/:id", async (req, res) => {
       const cartItemId = req.params.id;
       // console.log(typeof(cartItemId));
-      const result = await cartCollection.deleteOne({ id: cartItemId }); // Use 'new ObjectId()'
+      const result = await cartCollection.deleteOne({ id: cartItemId });
       res.send(result);
+    });
+
+    // payment intent.........................
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      console.log(price, amount);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     app.post("/booking", async (req, res) => {
@@ -181,6 +230,33 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.post("/payment", async (req, res) => {
+      const payment = req.body;
+      const InsertResult = await paymentCollection.insertOne(payment);
+      const query = {
+        id: { $in: payment.CartItems.map((id) => id) },
+      };
+      // console.log(query);
+
+      const deleteResult = await cartCollection.deleteMany(query);
+      // console.log(deleteResult);
+
+      res.send({ InsertResult, deleteResult });
+    });
+
+    app.get("/payment", async (req, res) => {
+      const result = await paymentCollection.find().toArray();
+      // console.log(result);
+      res.send(result);
+    });
+
+    app.get("/payment/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
       res.send(result);
     });
 
